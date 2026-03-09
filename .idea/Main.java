@@ -1,91 +1,37 @@
 import java.util.*;
 
-class Room {
-    private String type;
-    private double price;
-    private List<String> amenities;
+class Reservation {
+    String guestName;
+    String roomType;
+    int nights;
 
-    public Room(String type, double price, List<String> amenities) {
-        this.type = type;
-        this.price = price;
-        this.amenities = amenities;
+    Reservation(String guestName, String roomType, int nights) {
+        this.guestName = guestName;
+        this.roomType = roomType;
+        this.nights = nights;
     }
 
-    public String getType() {
-        return type;
-    }
-
-    public double getPrice() {
-        return price;
-    }
-
-    public List<String> getAmenities() {
-        return amenities;
+    public String toString() {
+        return "Guest: " + guestName + ", Room: " + roomType + ", Nights: " + nights;
     }
 }
 
-class Inventory {
-    private Map<String, Integer> availability;
-
-    public Inventory() {
-        availability = new HashMap<>();
-    }
-
-    public void addRoomType(String type, int count) {
-        availability.put(type, count);
-    }
-
-    public int getAvailability(String type) {
-        return availability.getOrDefault(type, 0);
-    }
-
-    public Set<String> getRoomTypes() {
-        return availability.keySet();
-    }
-}
-
-class SearchService {
-    private Inventory inventory;
-    private Map<String, Room> rooms;
-
-    public SearchService(Inventory inventory, Map<String, Room> rooms) {
-        this.inventory = inventory;
-        this.rooms = rooms;
-    }
-
-    public void searchAvailableRooms() {
-        for (String type : inventory.getRoomTypes()) {
-            int count = inventory.getAvailability(type);
-            if (count > 0) {
-                Room room = rooms.get(type);
-                System.out.println("Room Type: " + room.getType());
-                System.out.println("Price: " + room.getPrice());
-                System.out.println("Amenities: " + room.getAmenities());
-                System.out.println("Available: " + count);
-                System.out.println();
-            }
-        }
-    }
-}
-
-public class UseCase4RoomSearch {
+public class UseCase5BookingRequestQueue {
     public static void main(String[] args) {
+        Queue<Reservation> bookingQueue = new LinkedList<>();
 
-        Inventory inventory = new Inventory();
+        Reservation r1 = new Reservation("Alice", "Deluxe", 2);
+        Reservation r2 = new Reservation("Bob", "Suite", 3);
+        Reservation r3 = new Reservation("Charlie", "Standard", 1);
 
-        inventory.addRoomType("Single", 3);
-        inventory.addRoomType("Double", 0);
-        inventory.addRoomType("Suite", 2);
+        bookingQueue.add(r1);
+        bookingQueue.add(r2);
+        bookingQueue.add(r3);
 
-        Map<String, Room> rooms = new HashMap<>();
+        System.out.println("Booking Requests in Queue:");
 
-        rooms.put("Single", new Room("Single", 2000, Arrays.asList("WiFi", "TV")));
-        rooms.put("Double", new Room("Double", 3500, Arrays.asList("WiFi", "TV", "Mini Bar")));
-        rooms.put("Suite", new Room("Suite", 6000, Arrays.asList("WiFi", "TV", "Mini Bar", "Jacuzzi")));
-
-        SearchService searchService = new SearchService(inventory, rooms);
-
-        System.out.println("Available Rooms:");
-        searchService.searchAvailableRooms();
+        for (Reservation r : bookingQueue) {
+            System.out.println(r);
+        }
     }
 }
