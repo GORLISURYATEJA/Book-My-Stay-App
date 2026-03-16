@@ -1,13 +1,67 @@
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-void main() {
-    //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-    // to see how IntelliJ IDEA suggests fixing it.
-    IO.println(String.format("Hello and welcome!"));
+import java.util.*;
 
-    for (int i = 1; i <= 5; i++) {
-        //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-        // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-        IO.println("i = " + i);
+class Service {
+    private String name;
+    private double cost;
+
+    public Service(String name, double cost) {
+        this.name = name;
+        this.cost = cost;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public double getCost() {
+        return cost;
+    }
+
+    @Override
+    public String toString() {
+        return name + " (₹" + cost + ")";
+    }
+}
+
+class AddOnServiceManager {
+    private Map<String, List<Service>> reservationServices = new HashMap<>();
+
+    public void addServices(String reservationId, List<Service> services) {
+        reservationServices.putIfAbsent(reservationId, new ArrayList<>());
+        reservationServices.get(reservationId).addAll(services);
+    }
+
+    public List<Service> getServices(String reservationId) {
+        return reservationServices.getOrDefault(reservationId, Collections.emptyList());
+    }
+
+    public double calculateTotalCost(String reservationId) {
+        return getServices(reservationId).stream()
+                .mapToDouble(Service::getCost)
+                .sum();
+    }
+}
+
+public class UseCase7AddOnServiceSelection {
+    public static void main(String[] args) {
+        AddOnServiceManager manager = new AddOnServiceManager();
+
+        String reservation1 = "RES123";
+        String reservation2 = "RES456";
+
+        Service breakfast = new Service("Breakfast", 500);
+        Service spa = new Service("Spa Access", 1500);
+        Service airportPickup = new Service("Airport Pickup", 800);
+
+        manager.addServices(reservation1, Arrays.asList(breakfast, spa));
+        manager.addServices(reservation2, Arrays.asList(airportPickup));
+
+        System.out.println("Reservation: " + reservation1);
+        System.out.println("Selected Services: " + manager.getServices(reservation1));
+        System.out.println("Total Add-On Cost: ₹" + manager.calculateTotalCost(reservation1));
+
+        System.out.println("\nReservation: " + reservation2);
+        System.out.println("Selected Services: " + manager.getServices(reservation2));
+        System.out.println("Total Add-On Cost: ₹" + manager.calculateTotalCost(reservation2));
     }
 }
