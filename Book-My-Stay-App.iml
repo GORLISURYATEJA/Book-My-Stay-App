@@ -1,118 +1,105 @@
 import java.util.*;
 
-class Reservation {
-    private String reservationId;
-    private String guestName;
-    private String roomType;
+class BookingRequest {
+    String guestName;
+    String roomType;
 
-    public Reservation(String reservationId, String guestName, String roomType) {
-        this.reservationId = reservationId;
+    BookingRequest(String guestName, String roomType) {
         this.guestName = guestName;
         this.roomType = roomType;
     }
+}
 
-    public String getReservationId() {
-        return reservationId;
+class BookingQueue {
+    private Queue<BookingRequest> queue = new LinkedList<>();
+
+    public synchronized void addRequest(BookingRequest request) {
+        queue.add(request);
     }
 
-    public String getGuestName() {
-        return guestName;
-    }
-
-    public String getRoomType() {
-        return roomType;
+    public synchronized BookingRequest getRequest() {
+        return queue.poll();
     }
 }
 
 class RoomInventory {
-    private Map<String, Integer> inventory = new HashMap<>();
+    private Map<String, Integer> rooms = new HashMap<>();
 
-    public RoomInventory() {
-        inventory.put("Standard", 2);
-        inventory.put("Deluxe", 2);
-        inventory.put("Suite", 1);
+    RoomInventory() {
+        rooms.put("Single", 2);
+        rooms.put("Double", 2);
+        rooms.put("Deluxe", 1);
     }
 
-    public boolean allocateRoom(String roomType) {
-        if (!inventory.containsKey(roomType)) return false;
-        int available = inventory.get(roomType);
-        if (available <= 0) return false;
-        inventory.put(roomType, available - 1);
-        return true;
+    public synchronized boolean allocateRoom(String roomType) {
+        int available = rooms.getOrDefault(roomType, 0);
+        if (available > 0) {
+            rooms.put(roomType, available - 1);
+            return true;
+        }
+        return false;
     }
 
-    public void releaseRoom(String roomType) {
-        int available = inventory.get(roomType);
-        inventory.put(roomType, available + 1);
-    }
-
-    public void printInventory() {
-        for (String type : inventory.keySet()) {
-            System.out.println(type + " rooms available: " + inventory.get(type));
+    public void displayInventory() {
+        for (String type : rooms.keySet()) {
+            System.out.println(type + " Rooms Remaining: " + rooms.get(type));
         }
     }
 }
 
-class BookingHistory {
-    private Map<String, Reservation> reservations = new HashMap<>();
+class BookingProcessor extends Thread {
+    BookingQueue queue;
+    RoomInventory inventory;
 
-    public void addReservation(Reservation r) {
-        reservations.put(r.getReservationId(), r);
-    }
-
-    public Reservation getReservation(String id) {
-        return reservations.get(id);
-    }
-
-    public void removeReservation(String id) {
-        reservations.remove(id);
-    }
-}
-
-class CancellationService {
-    private BookingHistory history;
-    private RoomInventory inventory;
-    private Stack<String> rollbackStack = new Stack<>();
-
-    public CancellationService(BookingHistory history, RoomInventory inventory) {
-        this.history = history;
+    BookingProcessor(BookingQueue queue, RoomInventory inventory) {
+        this.queue = queue;
         this.inventory = inventory;
     }
 
-    public void cancelBooking(String reservationId) {
-        Reservation r = history.getReservation(reservationId);
-        if (r == null) {
-            System.out.println("Cancellation failed: Reservation not found");
-            return;
+    public void run() {
+        while (true) {
+            BookingRequest request = queue.getRequest();
+            if (request == null)
+                break;
+
+            boolean allocated = inventory.allocateRoom(request.roomType);
+
+            if (allocated)
+                System.out.println(request.guestName + " booked " + request.roomType + " room");
+            else
+                System.out.println("No " + request.roomType + " rooms available for " + request.guestName);
         }
-
-        rollbackStack.push(reservationId);
-        inventory.releaseRoom(r.getRoomType());
-        history.removeReservation(reservationId);
-        System.out.println("Booking cancelled for reservation ID: " + reservationId);
-    }
-
-    public void printRollbackStack() {
-        System.out.println("Rollback Stack: " + rollbackStack);
     }
 }
 
-public class UseCase10BookingCancellation {
+public class UseCase11ConcurrentBookingSimulation {
     public static void main(String[] args) {
+
+        BookingQueue queue = new BookingQueue();
         RoomInventory inventory = new RoomInventory();
-        BookingHistory history = new BookingHistory();
-        CancellationService cancellationService = new CancellationService(history, inventory);
 
-        Reservation r1 = new Reservation("R101", "Arjun", "Deluxe");
-        Reservation r2 = new Reservation("R102", "Meera", "Suite");
+        queue.addRequest(new BookingRequest("Guest1", "Single"));
+        queue.addRequest(new BookingRequest("Guest2", "Double"));
+        queue.addRequest(new BookingRequest("Guest3", "Single"));
+        queue.addRequest(new BookingRequest("Guest4", "Deluxe"));
+        queue.addRequest(new BookingRequest("Guest5", "Single"));
 
-        if (inventory.allocateRoom(r1.getRoomType())) history.addReservation(r1);
-        if (inventory.allocateRoom(r2.getRoomType())) history.addReservation(r2);
+        BookingProcessor t1 = new BookingProcessor(queue, inventory);
+        BookingProcessor t2 = new BookingProcessor(queue, inventory);
+        BookingProcessor t3 = new BookingProcessor(queue, inventory);
 
-        cancellationService.cancelBooking("R101");
-        cancellationService.cancelBooking("R200");
+        t1.start();
+        t2.start();
+        t3.start();
 
-        inventory.printInventory();
-        cancellationService.printRollbackStack();
+        try {
+            t1.join();
+            t2.join();
+            t3.join();
+        } catch (InterruptedException e) {
+        }
+
+        System.out.println("Final Inventory Status:");
+        inventory.displayInventory();
     }
 }
