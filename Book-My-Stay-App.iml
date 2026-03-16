@@ -1,11 +1,76 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<module type="JAVA_MODULE" version="4">
-  <component name="NewModuleRootManager" inherit-compiler-output="true">
-    <exclude-output />
-    <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
-    </content>
-    <orderEntry type="inheritedJdk" />
-    <orderEntry type="sourceFolder" forTests="false" />
-  </component>
-</module>
+import java.util.*;
+
+class InvalidBookingException extends Exception {
+    public InvalidBookingException(String message) {
+        super(message);
+    }
+}
+
+class RoomInventory {
+    private Map<String, Integer> inventory = new HashMap<>();
+
+    public RoomInventory() {
+        inventory.put("Standard", 2);
+        inventory.put("Deluxe", 2);
+        inventory.put("Suite", 1);
+    }
+
+    public void validateRoomType(String roomType) throws InvalidBookingException {
+        if (!inventory.containsKey(roomType)) {
+            throw new InvalidBookingException("Invalid room type: " + roomType);
+        }
+    }
+
+    public void reserveRoom(String roomType) throws InvalidBookingException {
+        validateRoomType(roomType);
+        int available = inventory.get(roomType);
+        if (available <= 0) {
+            throw new InvalidBookingException("No rooms available for type: " + roomType);
+        }
+        inventory.put(roomType, available - 1);
+    }
+
+    public void printInventory() {
+        for (String type : inventory.keySet()) {
+            System.out.println(type + " rooms available: " + inventory.get(type));
+        }
+    }
+}
+
+class BookingService {
+    private RoomInventory inventory;
+
+    public BookingService(RoomInventory inventory) {
+        this.inventory = inventory;
+    }
+
+    public void bookRoom(String guestName, String roomType) throws InvalidBookingException {
+        inventory.reserveRoom(roomType);
+        System.out.println("Booking confirmed for " + guestName + " in " + roomType + " room");
+    }
+}
+
+public class UseCase9ErrorHandlingValidation {
+    public static void main(String[] args) {
+        RoomInventory inventory = new RoomInventory();
+        BookingService bookingService = new BookingService(inventory);
+
+        String[][] bookingRequests = {
+                {"Arjun", "Deluxe"},
+                {"Meera", "Suite"},
+                {"Rahul", "Premium"},
+                {"Anita", "Suite"}
+        };
+
+        for (String[] request : bookingRequests) {
+            try {
+                bookingService.bookRoom(request[0], request[1]);
+            } catch (InvalidBookingException e) {
+                System.out.println("Booking failed: " + e.getMessage());
+            }
+        }
+
+        System.out.println("Current Inventory:");
+        inventory.printInventory();
+    }
+}
